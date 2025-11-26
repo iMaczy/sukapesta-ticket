@@ -18,69 +18,54 @@
 
 <script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
 <script>
-const owner = 'iMaczy';
-const repo = 'sukapesta-ticket';
-const filepath = 'tickets.json';
+const owner='iMaczy', repo='sukapesta-ticket', filepath='tickets.json';
 
-function show(msg){ document.getElementById('info').innerHTML = msg; }
+function show(msg){ document.getElementById('info').innerHTML=msg; }
 
 async function getFile(){
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${filepath}`;
-  const token = document.getElementById('token').value.trim();
-  const headers = token ? { Authorization: 'token ' + token } : {};
-  const res = await fetch(url, { headers });
-  if(!res.ok) throw new Error('Gagal mengambil file: ' + res.status);
-  return res.json();
+    const token = document.getElementById('token').value.trim();
+    const url=`https://api.github.com/repos/${owner}/${repo}/contents/${filepath}`;
+    const headers = token?{Authorization:'token '+token}:{};
+    const res=await fetch(url,{headers});
+    if(!res.ok) throw new Error('Gagal ambil file: '+res.status);
+    return res.json();
 }
 
-async function updateFile(newObj, sha){
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${filepath}`;
-  const token = document.getElementById('token').value.trim();
-  const message = `Update tickets.json - mark ${newObj.id} used`;
-  const content = btoa(unescape(encodeURIComponent(JSON.stringify(newObj.array, null, 2))));
-  const body = { message, content, sha };
-  const res = await fetch(url, {
-    method: 'PUT',
-    headers: { 'Content-Type':'application/json', 'Authorization': 'token ' + token },
-    body: JSON.stringify(body)
-  });
-  return res.json();
+async function updateFile(newArr, sha){
+    const token=document.getElementById('token').value.trim();
+    const url=`https://api.github.com/repos/${owner}/${repo}/contents/${filepath}`;
+    const content=btoa(unescape(encodeURIComponent(JSON.stringify(newArr,null,2))));
+    const body={message:'Update tiket',content,sha};
+    const headers={'Content-Type':'application/json'};
+    if(token) headers.Authorization='token '+token;
+    const res=await fetch(url,{method:'PUT',headers,body:JSON.stringify(body)});
+    return res.json();
 }
 
 async function hangusId(id){
-  try{
-    show('Mengecek file di GitHub...');
-    const f = await getFile();
-    const raw = atob(f.content.replace(/\n/g,''));
-    const arr = JSON.parse(raw);
-    const t = arr.find(x=>x.kode === id); // ✅ pakai kode
-    if(!t) { show('<div class="bad">Kode tidak ditemukan</div>'); return; }
-    if(t.status === 'used'){ show('<div class="bad">Sudah digunakan</div>'); return; }
-    // ubah status
-    t.status = 'used'; // ✅ ubah ke used
-    show('<div class="good">Tiket valid. Mengupload perubahan...</div>');
-    const result = await updateFile({ id, array: arr }, f.sha);
-    if(result.content){
-      show('<div class="good">Sukses! Tiket sudah dihanguskan.</div>');
-    } else {
-      show('<div class="bad">Gagal mengupdate: '+JSON.stringify(result).slice(0,200)+'</div>');
-    }
-  }catch(e){
-    show('<div class="bad">Error: '+e.message+'</div>');
-  }
+    try{
+        show('Mengecek file di GitHub...');
+        const f=await getFile();
+        const raw=atob(f.content.replace(/\n/g,''));
+        const arr=JSON.parse(raw);
+        const t=arr.find(x=>x.kode===id);
+        if(!t){ show('<div class="bad">Kode tidak ditemukan</div>'); return; }
+        if(t.status==='used'){ show('<div class="bad">Sudah digunakan</div>'); return; }
+        t.status='used';
+        show('<div class="good">Tiket valid. Mengupload perubahan...</div>');
+        const result=await updateFile(arr,f.sha);
+        if(result.content){ show('<div class="good">Sukses! Tiket sudah dihanguskan.</div>'); }
+        else { show('<div class="bad">Gagal update: '+JSON.stringify(result).slice(0,200)+'</div>'); }
+    }catch(e){ show('<div class="bad">Error: '+e.message+'</div>'); }
 }
 
 // scanner
-const html5QrCode = new Html5Qrcode("reader");
+const html5QrCode=new Html5Qrcode("reader");
 html5QrCode.start(
-  { facingMode: "environment" },
-  { fps: 10, qrbox: 250 },
-  (decodedText, decodedResult) => {
-    let id = decodedText.trim();
-    show('QR detected: ' + id + ' — processing...');
-    hangusId(id);
-  }
-).catch(err=>show('Camera error: ' + err));
+    {facingMode:"environment"},
+    {fps:10,qrbox:250},
+    (decodedText)=>{ hangusId(decodedText.trim()); }
+).catch(err=>show('Camera error: '+err));
 </script>
 </body>
 </html>
