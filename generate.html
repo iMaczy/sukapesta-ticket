@@ -25,7 +25,7 @@
 <h2>Generate Tiket SUKAPESTA</h2>
 
 <label>Nomor Tiket:</label>
-<input type="number" id="ticketNumber" placeholder="SP-00001">
+<input type="text" id="ticketNumber" placeholder="SP-00001">
 
 <button onclick="generateTicket()">Generate</button>
 
@@ -41,7 +41,7 @@
 
 <script>
 async function generateTicket() {
-    const ticketNum = document.getElementById("ticketNumber").value;
+    const ticketNum = document.getElementById("ticketNumber").value.trim();
 
     if (!ticketNum) {
         alert("Masukkan nomor tiket!");
@@ -61,7 +61,7 @@ async function generateTicket() {
     // Generate QR
     const qrCanvas = document.createElement("canvas");
     const qr = new QRCode(qrCanvas, {
-        text: "SUKAPESTA-" + ticketNum,
+        text: ticketNum,   // ✅ Sesuai field 'kode' JSON
         width: 300,
         height: 300
     });
@@ -70,8 +70,8 @@ async function generateTicket() {
 
     // POSISI QR (kecil & sedikit ke atas)
     const qrSize = 300;
-    const qrX = 140;      // geser sedikit biar lebih center
-    const qrY = 255;      // sudah dinaikkan 2 cm
+    const qrX = 140;      
+    const qrY = 255;      
 
     ctx.drawImage(qrCanvas.querySelector("img"), qrX, qrY, qrSize, qrSize);
 
