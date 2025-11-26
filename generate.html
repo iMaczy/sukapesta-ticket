@@ -1,68 +1,101 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Generate Ticket — Sukapesta</title>
-<link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Generate Ticket</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: #f5f5f5;
+    }
+    input {
+        padding: 10px;
+        width: 200px;
+        margin-right: 10px;
+    }
+    button {
+        padding: 10px 15px;
+        cursor: pointer;
+    }
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <h2>Generate Ticket + Embed QR</h2>
-    <label>Ticket ID: <input id="tid" placeholder="SP-00001" /></label>
-    <button id="genBtn">Generate & Embed</button>
-    <p>Template file must be named <code>ticket_template.png</code> in repo root.</p>
-    <div id="canvasWrap"></div>
-  </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<h2>Generate Tiket SUKAPESTA</h2>
+
+<label>Nomor Tiket:</label>
+<input type="number" id="ticketNumber" placeholder="SP-00001">
+
+<button onclick="generateTicket()">Generate</button>
+
+<br><br>
+
+<canvas id="ticketCanvas"></canvas>
+<br>
+<a id="downloadLink" download="ticket.png" style="display:none;">
+    <button>Download Tiket</button>
+</a>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
 <script>
-const baseUrl = location.origin + location.pathname.replace(/index\.html|\/$/,'') + '';
-// If using Github Pages root path might be slightly different; we'll use absolute path to template:
-const templateUrl = './ticket_template.png';
+async function generateTicket() {
+    const ticketNum = document.getElementById("ticketNumber").value;
 
-document.getElementById('genBtn').addEventListener('click', async ()=>{
-  const id = document.getElementById('tid').value.trim();
-  if(!id){ alert('Masukkan ID'); return; }
-  const link = `${location.origin}${location.pathname.replace(/scan\.html|index\.html|\/$/,'')}/scan.html?id=${id}`;
-  // generate QR canvas
-  const qr = new QRious({ value: link, size: 600 });
-  // load template
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.src = templateUrl + '?cache=' + Date.now();
-  img.onload = ()=> {
-    const canv = document.createElement('canvas');
-    canv.width = img.width;
-    canv.height = img.height;
-    const ctx = canv.getContext('2d');
-    ctx.drawImage(img,0,0);
-    // draw QR at a corner — adjust coordinates to fit your design
-    const qrSize = Math.min(img.width * 0.28, 600);
-    const x = img.width * 0.32; // adjust
-    const y = img.height * 0.10; // adjust
-    const qrImg = new Image();
-    qrImg.src = qr.toDataURL();
-    qrImg.onload = ()=>{
-      ctx.drawImage(qrImg, x, y, qrSize, qrSize);
-      // draw ID text
-      ctx.fillStyle = '#000';
-      ctx.font = `${Math.floor(img.width*0.03)}px Arial`;
-      ctx.fillText(id, x + 10, y + qrSize + 30);
-      // show result + download link
-      const wrap = document.getElementById('canvasWrap');
-      wrap.innerHTML = '';
-      wrap.appendChild(canv);
-      const a = document.createElement('a');
-      a.download = `ticket_${id}.png`;
-      a.href = canv.toDataURL('image/png');
-      a.textContent = 'Download Ticket PNG';
-      wrap.appendChild(document.createElement('br'));
-      wrap.appendChild(a);
+    if (!ticketNum) {
+        alert("Masukkan nomor tiket!");
+        return;
     }
-  };
-  img.onerror = ()=> alert('Gagal load template. Pastikan ticket_template.png ada di repo root.');
-});
+
+    const template = await loadImage("ticket_template.png");
+
+    const canvas = document.getElementById("ticketCanvas");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = template.width;
+    canvas.height = template.height;
+
+    ctx.drawImage(template, 0, 0);
+
+    // Generate QR
+    const qrCanvas = document.createElement("canvas");
+    const qr = new QRCode(qrCanvas, {
+        text: "SUKAPESTA-" + ticketNum,
+        width: 300,
+        height: 300
+    });
+
+    await new Promise(r => setTimeout(r, 500));
+
+    // POSISI QR (kecil & sedikit ke atas)
+    const qrSize = 300;
+    const qrX = 140;      // geser sedikit biar lebih center
+    const qrY = 255;      // sudah dinaikkan 2 cm
+
+    ctx.drawImage(qrCanvas.querySelector("img"), qrX, qrY, qrSize, qrSize);
+
+    // Nomor tiket
+    ctx.font = "bold 80px Arial";
+    ctx.fillStyle = "#000";
+    ctx.textAlign = "center";
+    ctx.fillText(ticketNum.padStart(5, "0"), canvas.width - 200, 110);
+
+    const link = document.getElementById("downloadLink");
+    link.href = canvas.toDataURL();
+    link.download = "TIKET_" + ticketNum + ".png";
+    link.style.display = "inline-block";
+}
+
+function loadImage(url) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(img);
+        img.src = url;
+    });
+}
 </script>
+
 </body>
 </html>
-
