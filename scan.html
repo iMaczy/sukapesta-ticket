@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sukapesta — Scanner</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wrap">
+    <h2>Scanner Tiket — Sukapesta</h2>
+    <div id="reader" style="width:100%"></div>
+    <div id="result"></div>
+    <hr/>
+    <p>Atau masukkan kode manual:</p>
+    <input id="manualId" placeholder="00001"/>
+    <button id="checkBtn">Cek</button>
+  </div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
+<script>
+const repoBase = 'https://raw.githubusercontent.com/iMaczy/sukapesta-ticket/main/tickets.json';
+
+function displayMessage(html) { document.getElementById('result').innerHTML = html; }
+
+function checkId(id){
+  displayMessage('Checking ' + id + ' ...');
+  fetch(repoBase)
+    .then(r=>r.json())
+    .then(data=>{
+      const ticket = data.find(t=>t.id===id);
+      if(!ticket) {
+        displayMessage('<div class="bad">❌ KODE TIDAK DITEMUKAN</div>');
+        return;
+      }
+      if(ticket.status === 'valid'){
+        displayMessage(`<div class="good">✔ TIKET VALID — ID: ${id} <br> Klik <b>Admin → Hanguskan</b> untuk validasi permanen.</div>`);
+      } else {
+        displayMessage(`<div class="bad">❌ TIKET SUDAH DIGUNAKAN</div>`);
+      }
+    })
+    .catch(e=>displayMessage('<div class="bad">Error: gagal load data</div>'));
+}
+
+document.getElementById('checkBtn').addEventListener('click', ()=>{
+  const id = (document.getElementById('manualId').value||'').trim();
+  if(id) checkId(id);
+});
+
+// start camera scanner
+const html5QrCode = new Html5Qrcode("reader");
+const qrConfig = { fps: 10, qrbox: 250 };
+html5QrCode.start(
+  { facingMode: "environment" },
+  qrConfig,
+  (decodedText, decodedResult) => {
+    // expected QR contains full URL or ?id=00001
+    let id = null;
+    try {
+      const u = new URL(decodedText);
+      id = u.searchParams.get('id') || (u.pathname.split('/').pop());
+    } catch(e){
+      // decodedText could be raw code
+      id = decodedText.replace(/\s/g,'').replace(/.*id=([0-9]+)/,'$1');
+    }
+    if(!id) id = decodedText.trim();
+    checkId(id);
+    // optionally stop scanner after read:
+    // html5QrCode.stop();
+  },
+  (errorMessage) => { /* ignore scan errors */ }
+).catch(err=>displayMessage('<div class="bad">Camera error: '+err+'</div>'));
+</script>
+</body>
+</html>

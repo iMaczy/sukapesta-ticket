@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sukapesta — Admin</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <h2>Admin Panel — Hanguskan Tiket</h2>
+  <p><strong>PERINGATAN:</strong> Masukkan Personal Access Token GitHub (scope: public_repo). Simpan token aman.</p>
+  <label>GitHub Token: <input id="token" type="password" style="width:60%"/></label>
+  <br/><br/>
+  <div id="reader" style="width:100%"></div>
+  <div id="info"></div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
+<script>
+const owner = 'iMaczy';
+const repo = 'sukapesta-ticket';
+const filepath = 'tickets.json';
+
+function show(msg){ document.getElementById('info').innerHTML = msg; }
+
+async function getFile(){
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${filepath}`;
+  const token = document.getElementById('token').value.trim();
+  const headers = token ? { Authorization: 'token ' + token } : {};
+  const res = await fetch(url, { headers });
+  if(!res.ok) throw new Error('Gagal mengambil file: ' + res.status);
+  return res.json(); // contains content (base64), sha
+}
+
+async function updateFile(newObj, sha){
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${filepath}`;
+  const token = document.getElementById('token').value.trim();
+  const message = `Update tickets.json - mark ${newObj.id} used`;
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(newObj.array, null, 2))));
+  const body = { message, content, sha };
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type':'application/json', 'Authorization': 'token ' + token },
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+async function hangusId(id){
+  try{
+    show('Mengecek file di GitHub...');
+    const f = await getFile();
+    const raw = atob(f.content.replace(/\n/g,''));
+    const arr = JSON.parse(raw);
+    const t = arr.find(x=>x.id === id);
+    if(!t) { show('<div class="bad">Kode tidak ditemukan</div>'); return; }
+    if(t.status === 'used'){ show('<div class="bad">Sudah digunakan</div>'); return; }
+    // ubah status
+    t.status = 'used';
+    show('<div class="good">Tiket valid. Mengupload perubahan...</div>');
+    const result = await updateFile({ id, array: arr }, f.sha);
+    if(result.content){
+      show('<div class="good">Sukses! Tiket sudah dihanguskan.</div>');
+    } else {
+      show('<div class="bad">Gagal mengupdate: '+JSON.stringify(result).slice(0,200)+'</div>');
+    }
+  }catch(e){
+    show('<div class="bad">Error: '+e.message+'</div>');
+  }
+}
+
+// scanner
+const html5QrCode = new Html5Qrcode("reader");
+html5QrCode.start(
+  { facingMode: "environment" },
+  { fps: 10, qrbox: 250 },
+  (decodedText, decodedResult) => {
+    let id = null;
+    try{ const u = new URL(decodedText); id = u.searchParams.get('id') || decodedText; }catch(e){ id = decodedText.trim(); }
+    show('QR detected: ' + id + ' — processing...');
+    hangusId(id);
+  }
+).catch(err=>show('Camera error: ' + err));
+</script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Generate Ticket — Sukapesta</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wrap">
+    <h2>Generate Ticket + Embed QR</h2>
+    <label>Ticket ID: <input id="tid" placeholder="00001" /></label>
+    <button id="genBtn">Generate & Embed</button>
+    <p>Template file must be named <code>ticket_template.png</code> in repo root.</p>
+    <div id="canvasWrap"></div>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<script>
+const baseUrl = location.origin + location.pathname.replace(/index\.html|\/$/,'') + '';
+// If using Github Pages root path might be slightly different; we'll use absolute path to template:
+const templateUrl = './ticket_template.png';
+
+document.getElementById('genBtn').addEventListener('click', async ()=>{
+  const id = document.getElementById('tid').value.trim();
+  if(!id){ alert('Masukkan ID'); return; }
+  const link = `${location.origin}${location.pathname.replace(/scan\.html|index\.html|\/$/,'')}/scan.html?id=${id}`;
+  // generate QR canvas
+  const qr = new QRious({ value: link, size: 600 });
+  // load template
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.src = templateUrl + '?cache=' + Date.now();
+  img.onload = ()=> {
+    const canv = document.createElement('canvas');
+    canv.width = img.width;
+    canv.height = img.height;
+    const ctx = canv.getContext('2d');
+    ctx.drawImage(img,0,0);
+    // draw QR at a corner — adjust coordinates to fit your design
+    const qrSize = Math.min(img.width * 0.28, 600);
+    const x = img.width * 0.32; // adjust
+    const y = img.height * 0.10; // adjust
+    const qrImg = new Image();
+    qrImg.src = qr.toDataURL();
+    qrImg.onload = ()=>{
+      ctx.drawImage(qrImg, x, y, qrSize, qrSize);
+      // draw ID text
+      ctx.fillStyle = '#000';
+      ctx.font = `${Math.floor(img.width*0.03)}px Arial`;
+      ctx.fillText(id, x + 10, y + qrSize + 30);
+      // show result + download link
+      const wrap = document.getElementById('canvasWrap');
+      wrap.innerHTML = '';
+      wrap.appendChild(canv);
+      const a = document.createElement('a');
+      a.download = `ticket_${id}.png`;
+      a.href = canv.toDataURL('image/png');
+      a.textContent = 'Download Ticket PNG';
+      wrap.appendChild(document.createElement('br'));
+      wrap.appendChild(a);
+    }
+  };
+  img.onerror = ()=> alert('Gagal load template. Pastikan ticket_template.png ada di repo root.');
+});
+</script>
+</body>
+</html>
