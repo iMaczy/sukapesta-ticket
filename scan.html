@@ -14,7 +14,7 @@
     <hr/>
     <p>Atau masukkan kode manual:</p>
     <input id="manualId" placeholder="SP-00001"/>
-    <button id="checkBtn">Cek</button>
+    <button id="checkBtn">Cek & Hangus</button>
   </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
@@ -23,41 +23,49 @@ const repoBase = 'https://raw.githubusercontent.com/iMaczy/sukapesta-ticket/main
 
 function displayMessage(html) { document.getElementById('result').innerHTML = html; }
 
-function checkId(id){
-  displayMessage('Checking ' + id + ' ...');
-  fetch(repoBase)
-    .then(r=>r.json())
-    .then(data=>{
-      const ticket = data.find(t => t.kode === id); // ✅ pakai field 'kode'
-      if(!ticket) {
-        displayMessage('<div class="bad">❌ KODE TIDAK DITEMUKAN</div>');
-        return;
-      }
-      if(ticket.status === 'UNUSED'){ // ✅ pakai UNUSED
-        displayMessage(`<div class="good">✔ TIKET VALID — ID: ${id} <br> Klik <b>Admin → Hanguskan</b> untuk validasi permanen.</div>`);
-      } else {
-        displayMessage(`<div class="bad">❌ TIKET SUDAH DIGUNAKAN</div>`);
-      }
-    })
-    .catch(e=>displayMessage('<div class="bad">Error: gagal load data</div>'));
+// ✅ Hanguskan tiket secara otomatis (update di JSON GitHub)
+async function hangusTiket(id){
+    try {
+        // Ambil file dari GitHub
+        const token = ''; // opsional kalau perlu akses private repo
+        const url = `https://api.github.com/repos/iMaczy/sukapesta-ticket/contents/tickets.json`;
+        const headers = token ? { Authorization: 'token ' + token } : {};
+        const f = await fetch(url, { headers }).then(r=>r.json());
+        const raw = atob(f.content.replace(/\n/g,''));
+        const arr = JSON.parse(raw);
+
+        const ticket = arr.find(t=>t.kode===id);
+        if(!ticket){ displayMessage('<div class="bad">❌ KODE TIDAK DITEMUKAN</div>'); return; }
+        if(ticket.status==='used'){ displayMessage('<div class="bad">❌ TIKET SUDAH DIGUNAKAN</div>'); return; }
+
+        ticket.status='used';
+        displayMessage(`<div class="good">✔ TIKET VALID & SUDAH HANGUSKAN — ID: ${id}</div>`);
+
+        // Update JSON di GitHub (optional, jika pakai token)
+        if(token){
+            const content = btoa(unescape(encodeURIComponent(JSON.stringify(arr,null,2))));
+            await fetch(url, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':'token '+token}, body:JSON.stringify({message:'Hanguskan tiket '+id, content, sha:f.sha}) });
+        }
+    } catch(e){
+        console.error(e);
+        displayMessage('<div class="bad">Error: '+e.message+'</div>');
+    }
 }
 
+function checkId(id){ hangusTiket(id); }
+
 document.getElementById('checkBtn').addEventListener('click', ()=>{
-  const id = (document.getElementById('manualId').value||'').trim();
-  if(id) checkId(id);
+    const id = (document.getElementById('manualId').value||'').trim();
+    if(id) checkId(id);
 });
 
-// start camera scanner
+// scanner
 const html5QrCode = new Html5Qrcode("reader");
-const qrConfig = { fps: 10, qrbox: 250 };
 html5QrCode.start(
   { facingMode: "environment" },
-  qrConfig,
-  (decodedText, decodedResult) => {
-    let id = decodedText.trim();
-    checkId(id);
-  },
-  (errorMessage) => { /* ignore scan errors */ }
+  { fps: 10, qrbox: 250 },
+  (decodedText) => { checkId(decodedText.trim()); },
+  (err)=>{}
 ).catch(err=>displayMessage('<div class="bad">Camera error: '+err+'</div>'));
 </script>
 </body>
