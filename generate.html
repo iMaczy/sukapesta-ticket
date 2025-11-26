@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Generate Ticket SUKAPESTA</title>
+<title>Generate Ticket</title>
 <style>
-body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
-input { padding: 10px; width: 200px; margin-right: 10px; }
-button { padding: 10px 15px; cursor: pointer; }
+    body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+    input { padding: 10px; width: 200px; margin-right: 10px; }
+    button { padding: 10px 15px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -14,7 +14,7 @@ button { padding: 10px 15px; cursor: pointer; }
 <h2>Generate Tiket SUKAPESTA</h2>
 
 <label>Nomor Tiket:</label>
-<input type="text" id="ticketNumber" placeholder="SP-00001" readonly>
+<input type="text" id="ticketNumber" placeholder="SP-00001">
 <button onclick="generateTicket()">Generate</button>
 
 <br><br>
@@ -27,65 +27,41 @@ button { padding: 10px 15px; cursor: pointer; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
-// Ganti dengan URL Web App backend kamu
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzFHNKl5a1wYYdY03UtybsGOKk_9QpYPB4VmI3i75PsK942OpokRC8ob0OC1CDcj7ZQmQ/exec";
-
 async function generateTicket() {
+    const ticketNum = document.getElementById("ticketNumber").value.trim();
+    if (!ticketNum) { alert("Masukkan nomor tiket!"); return; }
+
     const canvas = document.getElementById("ticketCanvas");
     const ctx = canvas.getContext("2d");
 
-    // request generate tiket baru ke backend
-    const resp = await fetch(WEB_APP_URL, {
-      method:'POST',
-      body: JSON.stringify({ action:'generate' }),
-      headers: { 'Content-Type':'application/json' }
-    });
-    const data = await resp.json();
+    canvas.width = 600;
+    canvas.height = 300;
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
 
-    if(data.status !== 'OK'){
-      alert("Gagal generate tiket: "+data.status);
-      return;
-    }
-
-    const ticketNum = data.kode;
-    document.getElementById("ticketNumber").value = ticketNum;
-
-    // load template tiket
-    const template = await loadImage("ticket_template.png");
-    canvas.width = template.width;
-    canvas.height = template.height;
-    ctx.drawImage(template, 0, 0);
-
-    // generate QR
-    const qrCanvas = document.createElement("canvas");
-    const qr = new QRCode(qrCanvas, { text: ticketNum, width:300, height:300 });
-    await new Promise(r => setTimeout(r,500)); // tunggu QR
-
-    const qrSize = 300, qrX = 140, qrY = 255;
-    ctx.drawImage(qrCanvas.querySelector("img"), qrX, qrY, qrSize, qrSize);
-
-    // nomor tiket
-    ctx.font = "bold 80px Arial";
+    // Tulis nomor tiket
+    ctx.font = "bold 40px Arial";
     ctx.fillStyle = "#000";
     ctx.textAlign = "center";
-    ctx.fillText(ticketNum, canvas.width - 200, 110);
+    ctx.fillText(ticketNum, canvas.width/2, 50);
 
-    // tombol download
+    // Generate QR code yang sama persis dengan id JSON
+    const qrCanvas = document.createElement("div");
+    new QRCode(qrCanvas, { text: ticketNum, width: 200, height: 200 });
+
+    // Wait sebentar untuk render
+    await new Promise(r => setTimeout(r, 500));
+
+    // Copy QR ke canvas
+    const img = qrCanvas.querySelector("img");
+    ctx.drawImage(img, canvas.width/2 - 100, 100, 200, 200);
+
+    // Download link
     const link = document.getElementById("downloadLink");
     link.href = canvas.toDataURL();
     link.download = "TIKET_" + ticketNum + ".png";
     link.style.display = "inline-block";
 }
-
-function loadImage(url){
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => resolve(img);
-        img.src = url;
-    });
-}
 </script>
-
 </body>
 </html>
