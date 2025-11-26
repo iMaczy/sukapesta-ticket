@@ -1,48 +1,45 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Sukapesta — Scanner</title>
-<script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
-<style>
-  body { font-family: Arial; padding: 20px; }
-  #reader { width: 100%; max-width: 400px; margin-bottom: 20px; }
-  .good { color: green; font-weight: bold; }
-  .bad { color: red; font-weight: bold; }
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div class="wrap">
+    <h2>Scanner Tiket — Sukapesta</h2>
+    <div id="reader" style="width:100%"></div>
+    <div id="result"></div>
+    <hr/>
+    <p>Atau masukkan kode manual:</p>
+    <input id="manualId" placeholder="SP-00001"/>
+    <button id="checkBtn">Cek</button>
+  </div>
 
-<h2>Scanner Tiket — Sukapesta</h2>
-<div id="reader"></div>
-<div id="result"></div>
-<hr>
-<p>Atau masukkan kode manual:</p>
-<input id="manualId" placeholder="SP-00001"/>
-<button id="checkBtn">Cek</button>
-
+<script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
 <script>
-const repoBase = 'tickets.json'; // path JSON lokal atau repo GitHub raw
+const repoBase = 'https://raw.githubusercontent.com/iMaczy/sukapesta-ticket/main/tickets.json';
 
-function displayMessage(html){ document.getElementById('result').innerHTML = html; }
+function displayMessage(html) { document.getElementById('result').innerHTML = html; }
 
 function checkId(id){
   displayMessage('Checking ' + id + ' ...');
   fetch(repoBase)
     .then(r=>r.json())
     .then(data=>{
-      const ticket = data.find(t=>t.id===id);
-      if(!ticket){
-        displayMessage('<div class="bad">❌ KODE TIDAK DITEMUKAN</div>'); return;
+      const ticket = data.find(t => t.kode === id); // ✅ pakai field 'kode'
+      if(!ticket) {
+        displayMessage('<div class="bad">❌ KODE TIDAK DITEMUKAN</div>');
+        return;
       }
-      if(ticket.status === 'unused'){
-        displayMessage(`<div class="good">✔ TIKET VALID — ID: ${id}</div>`);
+      if(ticket.status === 'UNUSED'){ // ✅ pakai UNUSED
+        displayMessage(`<div class="good">✔ TIKET VALID — ID: ${id} <br> Klik <b>Admin → Hanguskan</b> untuk validasi permanen.</div>`);
       } else {
         displayMessage(`<div class="bad">❌ TIKET SUDAH DIGUNAKAN</div>`);
       }
     })
-    .catch(e=>displayMessage('<div class="bad">Error load data</div>'));
+    .catch(e=>displayMessage('<div class="bad">Error: gagal load data</div>'));
 }
 
 document.getElementById('checkBtn').addEventListener('click', ()=>{
@@ -50,15 +47,18 @@ document.getElementById('checkBtn').addEventListener('click', ()=>{
   if(id) checkId(id);
 });
 
-// Camera scanner
+// start camera scanner
 const html5QrCode = new Html5Qrcode("reader");
+const qrConfig = { fps: 10, qrbox: 250 };
 html5QrCode.start(
   { facingMode: "environment" },
-  { fps: 10, qrbox: 250 },
-  (decodedText)=>{ checkId(decodedText.trim()); },
-  (err)=>{}
+  qrConfig,
+  (decodedText, decodedResult) => {
+    let id = decodedText.trim();
+    checkId(id);
+  },
+  (errorMessage) => { /* ignore scan errors */ }
 ).catch(err=>displayMessage('<div class="bad">Camera error: '+err+'</div>'));
 </script>
-
 </body>
 </html>
