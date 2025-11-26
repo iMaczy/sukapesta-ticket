@@ -13,7 +13,7 @@
     <div id="result"></div>
     <hr/>
     <p>Atau masukkan kode manual:</p>
-    <input id="manualId" placeholder="00001"/>
+    <input id="manualId" placeholder="SP-00001"/>
     <button id="checkBtn">Cek</button>
   </div>
 
@@ -54,7 +54,7 @@ html5QrCode.start(
   { facingMode: "environment" },
   qrConfig,
   (decodedText, decodedResult) => {
-    // expected QR contains full URL or ?id=00001
+    // expected QR contains full URL or ?id=SP-00001
     let id = null;
     try {
       const u = new URL(decodedText);
@@ -73,3 +73,4 @@ html5QrCode.start(
 </script>
 </body>
 </html>
+
