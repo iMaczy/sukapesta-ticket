@@ -41,24 +41,24 @@ async function generateTicket() {
 
     const canvas = document.getElementById('ticketCanvas');
     const ctx = canvas.getContext('2d');
-    const template = await loadImage("ticket_template.png"); 
-    canvas.width = template.width; canvas.height = template.height;
+    const template = await loadImage("ticket_template.png");
+    canvas.width=template.width; canvas.height=template.height;
     ctx.drawImage(template,0,0);
 
     const qrCanvas = document.createElement("canvas");
-    new QRCode(qrCanvas, {text: ticketNum, width:300, height:300});
+    new QRCode(qrCanvas,{text:ticketNum,width:300,height:300});
     await new Promise(r=>setTimeout(r,500));
 
     ctx.drawImage(qrCanvas.querySelector("img"),140,255,300,300);
     ctx.font="bold 80px Arial"; ctx.fillStyle="#000"; ctx.textAlign="center";
-    ctx.fillText(ticketNum, canvas.width-200,110);
+    ctx.fillText(ticketNum,canvas.width-200,110);
 
     const link = document.getElementById("downloadLink");
     link.href = canvas.toDataURL();
     link.download = "TIKET_"+ticketNum+".png";
     link.style.display="inline-block";
 
-  } catch(err) { alert("Error: "+err.message); }
+  } catch(err){ alert("Error: "+err.message); }
 }
 
 function loadImage(url){
