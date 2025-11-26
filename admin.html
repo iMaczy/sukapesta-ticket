@@ -30,7 +30,7 @@ async function getFile(){
   const headers = token ? { Authorization: 'token ' + token } : {};
   const res = await fetch(url, { headers });
   if(!res.ok) throw new Error('Gagal mengambil file: ' + res.status);
-  return res.json(); // contains content (base64), sha
+  return res.json();
 }
 
 async function updateFile(newObj, sha){
@@ -53,11 +53,11 @@ async function hangusId(id){
     const f = await getFile();
     const raw = atob(f.content.replace(/\n/g,''));
     const arr = JSON.parse(raw);
-    const t = arr.find(x=>x.id === id);
+    const t = arr.find(x=>x.kode === id); // ✅ pakai kode
     if(!t) { show('<div class="bad">Kode tidak ditemukan</div>'); return; }
     if(t.status === 'used'){ show('<div class="bad">Sudah digunakan</div>'); return; }
     // ubah status
-    t.status = 'used';
+    t.status = 'used'; // ✅ ubah ke used
     show('<div class="good">Tiket valid. Mengupload perubahan...</div>');
     const result = await updateFile({ id, array: arr }, f.sha);
     if(result.content){
@@ -76,8 +76,7 @@ html5QrCode.start(
   { facingMode: "environment" },
   { fps: 10, qrbox: 250 },
   (decodedText, decodedResult) => {
-    let id = null;
-    try{ const u = new URL(decodedText); id = u.searchParams.get('id') || decodedText; }catch(e){ id = decodedText.trim(); }
+    let id = decodedText.trim();
     show('QR detected: ' + id + ' — processing...');
     hangusId(id);
   }
