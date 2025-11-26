@@ -3,85 +3,97 @@
 <head>
 <meta charset="UTF-8">
 <title>Generate Ticket</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
     body {
         font-family: Arial, sans-serif;
-        margin: 20px;
+        padding: 20px;
+        background: #f5f5f5;
     }
-
-    #ticketCanvas {
-        border: 1px solid #ccc;
-        margin-top: 20px;
+    input {
+        padding: 10px;
+        width: 200px;
+        margin-right: 10px;
     }
-
-    .qr-container {
-        position: absolute;
-        left: 62%; /* geser sedikit ke kanan */
-        top: 33%;  /* posisi vertikal tetap */
-        transform: translate(-50%, -50%);
-        width: 120px; /* QR diperkecil lagi */
-        height: 120px;
-    }
-
-    #qrCode {
-        width: 100%;
-        height: 100%;
+    button {
+        padding: 10px 15px;
+        cursor: pointer;
     }
 </style>
 </head>
 <body>
 
-<h2>Generate Ticket</h2>
+<h2>Generate Tiket SUKAPESTA</h2>
 
-<label>ID Ticket:</label>
-<input type="text" id="ticketId" value="SP-00001">
+<label>Nomor Tiket:</label>
+<input type="number" id="ticketNumber" placeholder="SP-00001">
+
 <button onclick="generateTicket()">Generate</button>
 
 <br><br>
 
-<canvas id="ticketCanvas" width="1080" height="1920"></canvas>
+<canvas id="ticketCanvas"></canvas>
+<br>
+<a id="downloadLink" download="ticket.png" style="display:none;">
+    <button>Download Tiket</button>
+</a>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
 async function generateTicket() {
-    const id = document.getElementById('ticketId').value;
-    const canvas = document.getElementById('ticketCanvas');
-    const ctx = canvas.getContext('2d');
+    const ticketNum = document.getElementById("ticketNumber").value;
 
-    // Load Template
-    const template = new Image();
-    template.src = "ticket_template.png";
+    if (!ticketNum) {
+        alert("Masukkan nomor tiket!");
+        return;
+    }
 
-    template.onload = () => {
-        ctx.drawImage(template, 0, 0, canvas.width, canvas.height);
+    const template = await loadImage("ticket_template.png");
 
-        // Generate QR Code (hidden container)
-        const qrTemp = document.createElement("div");
-        qrTemp.style.display = "inline-block";
-        new QRCode(qrTemp, {
-            text: id,
-            width: 300,
-            height: 300
-        });
+    const canvas = document.getElementById("ticketCanvas");
+    const ctx = canvas.getContext("2d");
 
-        // Load generated QR image
-        const qrImg = qrTemp.querySelector("img");
-        
-        qrImg.onload = () => {
-            // Draw QR at adjusted position
-            const qrSize = 230; // ukuran kecil lagi
-            const qrX = canvas.width * 0.61 - qrSize / 2; // geser sedikit ke kanan
-            const qrY = canvas.height * 0.33 - qrSize / 2;
+    canvas.width = template.width;
+    canvas.height = template.height;
 
-            ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+    ctx.drawImage(template, 0, 0);
 
-            // Auto-download ticket
-            const link = document.createElement("a");
-            link.download = `ticket_${id}.png`;
-            link.href = canvas.toDataURL();
-            link.click();
-        };
-    };
+    // Generate QR
+    const qrCanvas = document.createElement("canvas");
+    const qr = new QRCode(qrCanvas, {
+        text: "SUKAPESTA-" + ticketNum,
+        width: 300,
+        height: 300
+    });
+
+    await new Promise(r => setTimeout(r, 500));
+
+    // POSISI QR (kecil & sedikit ke atas)
+    const qrSize = 300;
+    const qrX = 140;      // geser sedikit biar lebih center
+    const qrY = 255;      // sudah dinaikkan 2 cm
+
+    ctx.drawImage(qrCanvas.querySelector("img"), qrX, qrY, qrSize, qrSize);
+
+    // Nomor tiket
+    ctx.font = "bold 80px Arial";
+    ctx.fillStyle = "#000";
+    ctx.textAlign = "center";
+    ctx.fillText(ticketNum.padStart(5, "0"), canvas.width - 200, 110);
+
+    const link = document.getElementById("downloadLink");
+    link.href = canvas.toDataURL();
+    link.download = "TIKET_" + ticketNum + ".png";
+    link.style.display = "inline-block";
+}
+
+function loadImage(url) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(img);
+        img.src = url;
+    });
 }
 </script>
 
