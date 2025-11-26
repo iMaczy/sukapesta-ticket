@@ -1,63 +1,62 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Sukapesta — Scanner</title>
-<link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
+<style>
+  body { font-family: Arial; padding: 20px; }
+  #reader { width: 100%; max-width: 400px; margin-bottom: 20px; }
+  .good { color: green; font-weight: bold; }
+  .bad { color: red; font-weight: bold; }
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <h2>Scanner Tiket — Sukapesta</h2>
-    <div id="reader" style="width:100%"></div>
-    <div id="result"></div>
-    <hr/>
-    <p>Atau masukkan kode manual:</p>
-    <input id="manualId" placeholder="SP-00001"/>
-    <button id="checkBtn">Cek</button>
-  </div>
 
-<script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
+<h2>Scanner Tiket — Sukapesta</h2>
+<div id="reader"></div>
+<div id="result"></div>
+<hr>
+<p>Atau masukkan kode manual:</p>
+<input id="manualId" placeholder="SP-00001"/>
+<button id="checkBtn">Cek</button>
 
 <script>
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzFHNKl5a1wYYdY03UtybsGOKk_9QpYPB4VmI3i75PsK942OpokRC8ob0OC1CDcj7ZQmQ/exec";
+const repoBase = 'tickets.json'; // path JSON lokal atau repo GitHub raw
 
 function displayMessage(html){ document.getElementById('result').innerHTML = html; }
 
-async function checkId(kode){
-  try{
-    const resp = await fetch(WEB_APP_URL, {
-      method:'POST',
-      body: JSON.stringify({ action:'check', kode }),
-      headers: { 'Content-Type':'application/json' }
-    });
-    const data = await resp.json();
-
-    if(data.status==='VALID') displayMessage(`<div class="good">✔ TIKET VALID & HANGUS — ${kode}</div>`);
-    else if(data.status==='USED') displayMessage(`<div class="bad">❌ TIKET SUDAH DIGUNAKAN</div>`);
-    else displayMessage(`<div class="bad">❌ KODE TIDAK DITEMUKAN</div>`);
-
-  }catch(e){
-    displayMessage(`<div class="bad">Error: ${e.message}</div>`);
-  }
+function checkId(id){
+  displayMessage('Checking ' + id + ' ...');
+  fetch(repoBase)
+    .then(r=>r.json())
+    .then(data=>{
+      const ticket = data.find(t=>t.id===id);
+      if(!ticket){
+        displayMessage('<div class="bad">❌ KODE TIDAK DITEMUKAN</div>'); return;
+      }
+      if(ticket.status === 'unused'){
+        displayMessage(`<div class="good">✔ TIKET VALID — ID: ${id}</div>`);
+      } else {
+        displayMessage(`<div class="bad">❌ TIKET SUDAH DIGUNAKAN</div>`);
+      }
+    })
+    .catch(e=>displayMessage('<div class="bad">Error load data</div>'));
 }
 
-// tombol manual
 document.getElementById('checkBtn').addEventListener('click', ()=>{
   const id = (document.getElementById('manualId').value||'').trim();
   if(id) checkId(id);
 });
 
-// scanner QR
+// Camera scanner
 const html5QrCode = new Html5Qrcode("reader");
 html5QrCode.start(
   { facingMode: "environment" },
   { fps: 10, qrbox: 250 },
-  (decodedText, decodedResult) => {
-    let id = decodedText.trim();
-    checkId(id);
-  },
-  (errorMessage) => { /* ignore scan errors */ }
+  (decodedText)=>{ checkId(decodedText.trim()); },
+  (err)=>{}
 ).catch(err=>displayMessage('<div class="bad">Camera error: '+err+'</div>'));
 </script>
 
