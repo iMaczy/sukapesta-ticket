@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Generate Ticket</title>
+<title>Generate Tiket SUKAPESTA</title>
 <style>
     body {
         font-family: Arial, sans-serif;
         padding: 20px;
         background: #f5f5f5;
+        text-align: center;
     }
     input {
         padding: 10px;
@@ -18,6 +19,10 @@
         padding: 10px 15px;
         cursor: pointer;
     }
+    canvas {
+        margin-top: 20px;
+        border: 1px solid #ccc;
+    }
 </style>
 </head>
 <body>
@@ -26,7 +31,6 @@
 
 <label>Nomor Tiket:</label>
 <input type="text" id="ticketNumber" placeholder="SP-00001">
-
 <button onclick="generateTicket()">Generate</button>
 
 <br><br>
@@ -38,17 +42,13 @@
 </a>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
 <script>
 async function generateTicket() {
     const ticketNum = document.getElementById("ticketNumber").value.trim();
+    if (!ticketNum) { alert("Masukkan nomor tiket!"); return; }
 
-    if (!ticketNum) {
-        alert("Masukkan nomor tiket!");
-        return;
-    }
-
-    const template = await loadImage("ticket-template.jpeg");
+    // Load template tiket
+    const template = await loadImage("/mnt/data/93dae76c-3fa7-4a9a-bae1-b45525e527ea.png");
 
     const canvas = document.getElementById("ticketCanvas");
     const ctx = canvas.getContext("2d");
@@ -58,29 +58,31 @@ async function generateTicket() {
 
     ctx.drawImage(template, 0, 0);
 
-    // Generate QR
+    // Generate QR Code
     const qrCanvas = document.createElement("canvas");
     const qr = new QRCode(qrCanvas, {
-        text: ticketNum,   // ✅ Sesuai field 'kode' JSON
-        width: 300,
-        height: 300
+        text: ticketNum,
+        width: 120,   // QR sedikit lebih kecil
+        height: 120
     });
 
+    // Tunggu QR siap
     await new Promise(r => setTimeout(r, 500));
 
-    // POSISI QR (kecil & sedikit ke atas)
-    const qrSize = 300;
-    const qrX = 140;      
-    const qrY = 255;      
-
+    // ================= POSISI SESUAI TEMPLATE =================
+    // QR Code di kotak kosong di atas logo, kiri sedikit
+    const qrX = 100;   
+    const qrY = 100;   
+    const qrSize = 120;
     ctx.drawImage(qrCanvas.querySelector("img"), qrX, qrY, qrSize, qrSize);
 
-    // Nomor tiket
-    ctx.font = "bold 80px Arial";
+    // Nomor tiket di pojok kanan atas kosong
+    ctx.font = "bold 36px Arial";
     ctx.fillStyle = "#000";
-    ctx.textAlign = "center";
-    ctx.fillText(ticketNum.padStart(5, "0"), canvas.width - 200, 110);
+    ctx.textAlign = "right";
+    ctx.fillText(ticketNum, canvas.width - 60, 80);
 
+    // Set download link
     const link = document.getElementById("downloadLink");
     link.href = canvas.toDataURL();
     link.download = "TIKET_" + ticketNum + ".png";
@@ -99,4 +101,3 @@ function loadImage(url) {
 
 </body>
 </html>
-
