@@ -48,7 +48,7 @@ async function generateTicket() {
         return;
     }
 
-    const template = await loadImage("ticket_template.png");
+    const template = await loadImage("ticket-template.jpeg");
 
     const canvas = document.getElementById("ticketCanvas");
     const ctx = canvas.getContext("2d");
@@ -99,3 +99,4 @@ function loadImage(url) {
 
 </body>
 </html>
+
