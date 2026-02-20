@@ -70,16 +70,16 @@ async function generateTicket() {
 
     // POSISI QR (kecil & sedikit ke atas)
     const qrSize = 150;
-    const qrX = 128;      
+    const qrX = 129;      
     const qrY = 120;      
 
     ctx.drawImage(qrCanvas.querySelector("img"), qrX, qrY, qrSize, qrSize);
 
     // Nomor tiket
-    ctx.font = "bold 80px Arial";
+    ctx.font = "bold 70px Arial";
     ctx.fillStyle = "#000";
     ctx.textAlign = "center";
-    ctx.fillText(ticketNum.padStart(5, "0"), canvas.width - 200, 110);
+    ctx.fillText(ticketNum.padStart(5, "0"), canvas.width - 200, 80);
 
     const link = document.getElementById("downloadLink");
     link.href = canvas.toDataURL();
@@ -99,6 +99,7 @@ function loadImage(url) {
 
 </body>
 </html>
+
 
 
 
