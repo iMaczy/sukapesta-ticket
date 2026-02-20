@@ -69,9 +69,9 @@ async function generateTicket() {
     await new Promise(r => setTimeout(r, 500));
 
     // POSISI QR (kecil & sedikit ke atas)
-    const qrSize = 150;
-    const qrX = 100;      
-    const qrY = 150;      
+    const qrSize = 100;
+    const qrX = 80;      
+    const qrY = 100;      
 
     ctx.drawImage(qrCanvas.querySelector("img"), qrX, qrY, qrSize, qrSize);
 
@@ -99,6 +99,7 @@ function loadImage(url) {
 
 </body>
 </html>
+
 
 
 
