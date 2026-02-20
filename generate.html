@@ -79,7 +79,7 @@ async function generateTicket() {
     ctx.font = "bold 60px Arial";
     ctx.fillStyle = "#000";
     ctx.textAlign = "center";
-    ctx.fillText(ticketNum.padStart(5, "0"), canvas.width - 200, 65);
+    ctx.fillText(ticketNum.padStart(5, "0"), canvas.width - 200, 55);
 
     const link = document.getElementById("downloadLink");
     link.href = canvas.toDataURL();
@@ -99,6 +99,7 @@ function loadImage(url) {
 
 </body>
 </html>
+
 
 
 
