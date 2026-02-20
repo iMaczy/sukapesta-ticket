@@ -62,16 +62,16 @@ async function generateTicket() {
     const qrCanvas = document.createElement("canvas");
     const qr = new QRCode(qrCanvas, {
         text: ticketNum,   // ✅ Sesuai field 'kode' JSON
-        width: 300,
-        height: 300
+        width: 150,
+        height: 150
     });
 
     await new Promise(r => setTimeout(r, 500));
 
     // POSISI QR (kecil & sedikit ke atas)
-    const qrSize = 300;
-    const qrX = 140;      
-    const qrY = 255;      
+    const qrSize = 150;
+    const qrX = 100;      
+    const qrY = 150;      
 
     ctx.drawImage(qrCanvas.querySelector("img"), qrX, qrY, qrSize, qrSize);
 
@@ -99,5 +99,6 @@ function loadImage(url) {
 
 </body>
 </html>
+
 
 
